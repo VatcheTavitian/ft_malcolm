@@ -1,60 +1,108 @@
 # ft_malcolm
-ARP Poisoning Software as part of Ecole 42's outer circle project.
 
-# Description
-This ARP poisoning software in default mode listens on a socket for ARP requests. When a request is received it is assessed to see if the target IP and MAC addresses match. Then it checks to see that the IP (i.e the IP address the target is looking for) matches the Source IP field set when the program is launched. If a match is found, the program sends an ARP response back to the target and exits.
+ARP Poisoning Software as part of Ecole 42's Outer Circle project.
 
-# Installation
-After cloning repository, navigate to directory and type
-``` make ``` to build
-``` make re ``` to rebuild
-``` make clean ``` to remove unneccessary object files after build
-``` make fclean ``` to remove object files and binary
+## Description
 
-# Usage
-Must be launched as root or with sudo permissions
-``` sudo ./ft_malcolm [Source IP] [Source MAC] [Target IP] [Target MAC] [Options] ```
+This ARP poisoning software, in its default mode, listens on a socket for ARP requests. When a request is received, it checks if the target IP and MAC addresses match the specified criteria. It then verifies if the IP address the target is seeking matches the Source IP provided at launch. If a match is found, the program sends an ARP response back to the target with the Source MAC as the address for the Source IP. The program then exits.
 
-Source IP - IP Address you want to spoof
-Source MAC - MAC address you want the target to associate with the spoofed IP
-Target IP - IP Address of target device on network
-Target MAC - MAC address of target device on network
+## Installation
 
-NOTE - The [Target MAC] accepts full or partial wildcard (*). If you do not know the mac address of the target you can set as ``` **:**:**:**:**:** ``` or if you know partial you can set wildcard for unknown fields, eg ``` aa:bb:**:dd:**:ff ```
-The wildcard does not work if you use the ```-target``` option.
+After cloning the repository, navigate to the project directory and use the following commands as required:
 
-# Options
-The program can be run with the following options:
+```bash
+make        # Build the project
+make re     # Rebuild the project
+make clean  # Remove unnecessary object files after build
+make fclean # Remove object files and binary file
+```
 
-```-verbose``` - Prints detailed information including packet information of sent payload
-```-target``` - Actively sends a crafted ARP packet to the target IP instead of waiting and listening for the target to send a request.
-```-broadcast``` - Sends a broadcast ARP packet to all devices on the network notifying them of the spoofed IP and MAC
-```-interface <interface name>``` - Manually sets the interface to listen and respond from. Must be a valid network interface for it to work.
 
-# Tips!
-Linux by default has security features that prevent unsolicited ARP responses from being cached. If the following command is typed into a terminal on the target and the output is '0' then the security feature is active and the target must send a request in order to process the response. i.e using -target and -broadcast options will not work.
-`sudo sysctl net.ipv4.conf.all.arp_accept `
-Note - by setting `sudo sysctl net.ipv4.conf.all.arp_accept=1` you are allowing your device to accept unsolicited ARP responses!
+## Usage
 
-If you are trying to spoof an existing IP on a network then it is likely the response from the existing device is sent before this program sends the response. The linux OS will process the packet which arrives first and ignores the packet which arrives second (eg this program). This is part of the above mentioned security feature of ignoring unsolicited responses.
+The program must be launched as root or with sudo permissions.
 
-You will not be able to poison yourself! This is as a result of RFC 5227 IP Conflict Detection.
+```bash
+sudo ./ft_malcolm [Source IP] [Source MAC] [Target IP] [Target MAC] [Options]
+```
 
-If you want to verify the payload printing is correct as part of verbose mode you can run tcp dump while running ft_malcolm
-```sudo tcpdump -i <your_interface_name> -s 0 -xx arp```
+- **Source IP**: IP address you want to spoof.
+- **Source MAC**: MAC address you want the target to associate with the spoofed IP.
+- **Target IP**: IP address of the target device on the network.
+- **Target MAC**: MAC address of the target device on the network.
+
+**Note:**
+The `[Target MAC]` parameter accepts full or partial wildcards (`*`).
+
+- If you do not know the MAC address of the target, use `**:**:**:**:**:**`.
+- For partial knowledge, set wildcards for unknown fields, e.g., `aa:bb:**:dd:**:ff`.
+
+The wildcard does **not** work if you use the `-target` option.
+
+## Options
+
+The program supports the following options:
+
+- `-verbose`
+Prints detailed information, including packet information of sent payloads.
+- `-target`
+Actively sends a crafted ARP packet to the target IP instead of waiting and listening for the target to send a request.
+- `-broadcast`
+Sends a broadcast ARP packet to all devices on the network, notifying them of the spoofed IP and MAC.
+- `-interface <interface name>`
+Manually sets the interface to listen and respond from. Must be a valid network interface.
+
+
+## Tips
+
+- **Linux Security Features:**
+By default, Linux has security features that prevent unsolicited ARP responses from being cached. To check if this feature is active, run:
+
+```bash
+sudo sysctl net.ipv4.conf.all.arp_accept
+```
+
+If the output is `0`, the security feature is active and the target must send a request to process the response. In this case, the `-target` and `-broadcast` options will not work.
+To allow your device to accept unsolicited ARP responses, set:
+
+```bash
+sudo sysctl net.ipv4.conf.all.arp_accept=1
+```
+
+- **Spoofing Existing IPs:**
+If you try to spoof an existing IP on the network, the legitimate device may respond before this program does. Linux will process the first packet and ignore subsequent ones, as part of its security measures mentioned in previous point.
+- **Self-Poisoning Prevention:**
+You cannot poison your own device due to RFC 5227 IP Conflict Detection.
+- **Verbose Mode Verification:**
+To verify payload printing in verbose mode, run tcpdump while running ft_malcolm:
+
+```bash
+sudo tcpdump -i <your_interface_name> -s 0 -xx arp
+```
+
 
 # Demonstration
 
-[TARGET MACHINE]
+We will try to poison target 10.13.200.129. We do not know its MAC address so we will use '*' during launch.
+
+We will spoof the IP 10.13.200.150 with fake MAC aa:bb:cc:dd:ee:ff
 
 
+[TARGET MACHINE BEFORE POISONING]
+
+![alt text](readmeImages/targetbefore.png)
 
 
-# sysctl net.ipv4.conf.all.arp_accept=1
+[HOST MACHINE RUNNING FT_MALCOLM]
 
-# ip link set dev eth0 arp off
-#
-# sudo sysctl net.ipv4.conf.all.arp_ignore=1
+![alt text](readmeImages/hostmachine.png)
+
+[TARGET MACHINE AFTER POISONING]
+
+Note - To force an ARP request, we ping 10.13.200.150
 
 
-sudo tcpdump -i <your_interface_name> -s 0 -xx arp
+![alt text](readmeImages/targetafter.png)
+
+Target machine now thinks 10.129.200.150 is at MAC address aa:bb:cc:dd:ee:ff
+
